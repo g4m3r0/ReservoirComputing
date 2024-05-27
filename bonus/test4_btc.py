@@ -242,6 +242,49 @@ class RecurrentNetworkLQR2(object):
             
         # Return the average error for monitoring
         return np.abs(error_y).sum() / self.No
+    
+    def train_recurrent_thalamus_lqr(self, target, Q_val, R_val):
+        """
+        Applies an LQR-like learning rule to the thalamus recurrent weights based on a defined cost function.
+
+        * `target`: desired trajectory at time t, numpy array of shape (N, 1)
+        * `Q_val`: scalar representing the cost of deviation from the desired neuron activity
+        * `R_val`: scalar representing the cost of changing weights (control input)
+        """
+        # Define the 'A' matrix (system dynamics), decay towards zero without input for thalamus neurons
+        A = np.eye(self.N_plastic_u) * -1
+
+        # Define the 'B' matrix (control dynamics), unitary effect of weight changes for thalamus neurons
+        B = np.eye(self.N_plastic_u)
+
+        # Define the 'Q' matrix (cost of state deviation) specifically for thalamus neurons
+        Q = np.eye(self.N_plastic_u) * Q_val
+
+        # Define the 'R' matrix (cost of control effort) specifically for thalamus neurons
+        R = np.eye(self.N_plastic_u) * R_val
+
+        # Compute the LQR gain 'K' for thalamus neurons
+        K, _, _ = control.lqr(A, B, Q, R)
+
+        # Initialize total error for monitoring
+        total_error = 0
+
+        # Compute the error of the thalamus neurons
+        error_u = self.r_u - target
+        
+        # Apply the LQR-like update rule to the thalamus recurrent weights
+        for i in range(self.N_plastic_u):  # for each plastic post neuron in thalamus
+            # Apply LQR control law: change in weights = -K * error for the slice of neurons under consideration
+            delta_W = -np.dot(K, error_u[0:self.N_plastic_u])
+            
+            # Update the thalamus recurrent weights based on the error and 'gain'
+            self.W_rec_u[i, self.W_plastic_u[i]] += delta_W[i, 0]  # Adjust specific weights for thalamus connections
+
+            # Accumulate total error
+            total_error += np.abs(error_u[i, 0])
+
+        # Return the average error for monitoring
+        return total_error / self.N_plastic_u
 
 def train_reservoir_model(rn, data, apply_noise=True, apply_feedback=False, use_lqr=False, print_step_error=False):
     """
