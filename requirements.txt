@@ -1,0 +1,6 @@
+# Required packages
+numpy>=1.20.2
+matplotlib
+pandas
+threading
+csv
