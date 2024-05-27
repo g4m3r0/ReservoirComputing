@@ -26,6 +26,7 @@ This experiment compares the performance of LQR and FORCE models under three dif
 - `train_reservoir.py`: Script used for training the reservoir computing model. 
 
 - `results/`: Consolidated results and analysis of all experiments. 
+- `bonus/`: Additional conducted experiment to predict the Bitcoin price using reservoir computing. 
 
 - `README.md`: Overview of the repository and experiments.
 
